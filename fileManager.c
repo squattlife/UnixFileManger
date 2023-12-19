@@ -120,7 +120,7 @@ int main() {
             {
                 char itemName[MAX_FILENAME_LEN];
                 char categoryName[MAX_FILENAME_LEN];
-                printf("추가할 아이템 이름을 입력하세요: ");
+                printf("추가할 파일 이름을 입력하세요: ");
                 scanf("%s", itemName);
                 printf("추가할 카테고리 이름을 입력하세요: ");
                 scanf("%s", categoryName);
@@ -284,7 +284,31 @@ void addToCategory(const char *folderPath, const char *itemName, const char *cat
     char categoryPath[MAX_PATH_LEN];
     GET_FILE_PATH(folderPath, categoryName, categoryPath);
 
-    int result = rename(itemPath, categoryPath);
+    struct stat itemStat, categoryStat;
+
+    // 파일과 카테고리의 정보를 얻기
+    if (stat(itemPath, &itemStat) == -1 || stat(categoryPath, &categoryStat) == -1) {
+        PRINT_ERROR("파일 정보 읽기 오류");
+        return;
+    }
+
+    // 파일이 디렉토리라면 오류 출력
+    if (S_ISDIR(itemStat.st_mode)) {
+        printf("오류: %s는 디렉토리입니다.\n", itemName);
+        return;
+    }
+
+    // 카테고리가 디렉토리가 아니라면 오류 출력
+    if (!S_ISDIR(categoryStat.st_mode)) {
+        printf("오류: %s는 디렉토리가 아닙니다.\n", categoryName);
+        return;
+    }
+
+    char newFilePath[MAX_PATH_LEN];
+    GET_FILE_PATH(categoryPath, itemName, newFilePath);
+
+    // 새로운 파일 경로로 아이템 이동
+    int result = rename(itemPath, newFilePath);
 
     if (result == 0) {
         printf("%s가 성공적으로 %s 카테고리에 추가되었습니다.\n", itemName, categoryName);
@@ -292,3 +316,4 @@ void addToCategory(const char *folderPath, const char *itemName, const char *cat
         PRINT_ERROR("카테고리에 추가 오류");
     }
 }
+
